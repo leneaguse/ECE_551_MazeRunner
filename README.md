@@ -5,20 +5,20 @@ Project Team Latches - Group members:
 ## Action Items:
   * Commit missing files: mtr_drv.sv, PID.sv (and dependent files if any)
   * Complete sub-modules
-    1. cmd_proc:
-      * Write cmd_proc_tb.sv
-      * Validate simulation
-      * Successfully synthesize module
-    1. CommMaster:
-      * Complete CommTB.sv
-      * Validate simulation
-      * Successfully synthesize module
-    1. SPI_mstr16:
-      * Successfully synthesize module
+    * cmd_proc:
+      1. Write cmd_proc_tb.sv
+      1. Validate simulation
+      1. Successfully synthesize module
+    * CommMaster:
+      1. Complete CommTB.sv
+      1. Validate simulation
+      1. Successfully synthesize module
+    * SPI_mstr16:
+      1. Successfully synthesize module
   * Validate project
-    * Complete MazeRunner_tb.sv
-    * Validate simulation
-    * Write synthesis script and successfully synthesize project
+    1. Complete MazeRunner_tb.sv
+    11. Validate simulation
+    111. Write synthesis script and successfully synthesize project
   
 ## Control Flow:
   _file_ -> _dependent files_
