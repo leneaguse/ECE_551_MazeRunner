@@ -52,23 +52,26 @@ module MazeRunner(clk,RST_n,SS_n,MOSI,MISO,SCLK,PWMR,PWML,
   //////////////////////////////
   // Instantiate Motor Drive //
   ////////////////////////////
-  <-- instantiate your motor drive -->
+  mtr_drv mtr_drv(.clk(clk), .rst_n(rst_n), .lft_duty(lft_duty), .rght_duty(rght_duty), .DIRL(DIRL), .DIRR(DIRR), .PWML(PWML), .PWMR(PWMR));
   
   ///////////////////////////////////////////
   // Instantiate IR line sensor interface //
   /////////////////////////////////////////
-  <-- Instantiate your IR_intf (Don't forget to pass FAST_SIM to it) -->
+  IR_intf IR_intf(.clk(clk), .rst_n(rst_n), .SS_n(SS_n), .SCLK(SCLK), .MOSI(MOSI), .MISO(MISO), .IR_en(IR_en), . IR_vld(IR_vld),
+	.line_present(line_present), .IR_L0(IR_L0), .IR_L1(IR_L1), .IR_L2(IR_L2), .IR_L3(IR_L3), .IR_R0(IR_R0), .IR_R1(IR_R1),
+	.IR_R2(IR_R2), .IR_R3(IR_R3));
 
 				  
   ////////////////////////////////
   // Instantiate error compute //
   //////////////////////////////
-  <-- Instantiate your err_compute -->
+  err_compute err_compute(.clk(clk), .rst_n(rst_n), .IR_vld(IR_vld), .IR_L0(IR_R0), .IR_L1(IR_L1), .IR_L2(IR_L2), .IR_L3(IR_L3),
+	.IR_R0(IR_R0), .IR_R1(IR_R1), .IR_R2(IR_R2), .IR_R3(IR_R3));
 
   ///////////////////////////////////////////////////////////////////
   // Instantiate cmd_proc block to receive & process command byte //
   /////////////////////////////////////////////////////////////////
-  <-- Instantiate your cmd_proc (Don't forget to pass FAST_SIM to it) -->
+  cmd_proc cmd_proc(.clk(clk), .rst_n(rst_n), .line_present(line_present), .RX(RX), .go(go), .err_opn_lp(err_opn_lp), .BMPL_n(BMPL_n), .buzz(buzz));
 						
   ////////////////////////////////////////////////////////////
   // To increase volume of buzzer we drive it differential //
@@ -84,10 +87,10 @@ module MazeRunner(clk,RST_n,SS_n,MOSI,MISO,SCLK,PWMR,PWML,
   //////////////////////////////////////
   // Instantiate your PID controller //
   ////////////////////////////////////
-  <-- Instantiate your PID (Don't forget to pass FAST_SIM to it) -->
+  PID PID(.clk(clk), .rst_n(rst_n), .go(go), .err_vld(err_vld), .error(error), .lft_spd(lft_spd), .right_spd(right_spd));
 					 
 		   
-  assign LED = <-- there are 8 LEDs...do what you like...nothing is an option -->
+  //assign LED = <-- there are 8 LEDs...do what you like...nothing is an option -->
    
   
   
