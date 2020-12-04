@@ -1,0 +1,37 @@
+module I_term (clk, rst_n, err_sat, err_vld, go, moving, line_present, I_term);
+input clk, rst_n;
+input [10:0] err_sat;
+input line_present, moving, go, err_vld;
+output [9:0] I_term;
+
+localparam P_COEFF = 4'h6;
+
+wire [15:0] err_extend, err_add, err_freeze;
+wire ov;
+reg [15:0] integrator;
+reg pos_edge, pos_edge_flag;
+
+  assign I_term = integrator[15:6];
+  assign err_extend = {{5{err_sat[10]}}, err_sat[10:0] };
+  assign err_add = integrator + err_extend;
+  assign err_freeze = (err_vld && ~ov)? err_add : integrator;
+  assign ov = integrator[15] == err_extend[15] && err_add[15] != err_extend[15];
+  always_ff @(posedge clk, negedge rst_n)
+    if (!rst_n)
+      integrator <= 16'h0000;
+    else if (pos_edge || ~go || ~moving)
+      integrator <= 16'h0000;
+    else
+      integrator <= err_freeze;
+
+  always_ff @(posedge clk, posedge line_present)
+    if(!line_present)begin
+      pos_edge_flag <= 1'b0;
+      pos_edge <= 1'b0;
+    end else if(line_present && !pos_edge_flag) begin
+      pos_edge <= 1'b1;
+      pos_edge_flag <= 1'b1;
+    end else begin
+      pos_edge <= 1'b0;
+    end
+endmodule
