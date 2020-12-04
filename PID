@@ -1,0 +1,50 @@
+//****************************
+// Module: PID
+// Author: Harry Zhao
+// Date 11/20/2020
+//****************************
+module PID(clk, rst_n, go, err_vld, line_present, error, lft_spd, rght_spd, moving);
+  parameter FAST_SIM=0;  //parameter used to speed up simulation
+  input clk, rst_n;      //clock, async reset
+  input [15:0] error;    //error
+  input go, err_vld, line_present;  //inputs used to control PID
+  output [11:0] lft_spd, rght_spd;  //Output speed for left and right motor
+  output moving;                    //indicate if the car is moving
+
+  //Instantiate variables used in this module
+  wire [9:0] I_term;
+  wire [14:0] P_term, D_term, I_term_extend, term_sum, PID;
+  wire [5:0] increment;
+  wire [10:0] err_sat;
+  reg [10:0] frwrd;
+
+  //Instantiate the terms in PID
+  P_term P_TERM(.error(error), .P_term(P_term), .err_sat(err_sat));
+  I_term I_TERM(.clk(clk), .rst_n(rst_n), .err_sat(err_sat), .err_vld(err_vld), .go(go), .moving(moving), .line_present(line_present), .I_term(I_term));
+  D_term D_TERM(.clk(clk), .rst_n(rst_n), .err_sat(err_sat), .err_vld(err_vld), .D_term(D_term));
+
+  //Generate difference assignment statements to accelerate simulation
+  generate
+    if (FAST_SIM)
+      assign increment = 6'h20;
+    else
+      assign increment = 6'h04;
+  endgenerate
+
+  assign I_term_extend = {{5{I_term[9]}}, I_term};    //Extend I_term
+  assign term_sum = P_term + I_term_extend + D_term;  // add all terms
+  assign PID = go ? term_sum : 15'h0000;              // Chose PID input based on input go
+  assign moving = frwrd > 11'h080;                    // assign moving
+  assign lft_spd = moving ? (PID[14:3]+ {0,frwrd}) : {0,frwrd}; //lft speed calculation
+  assign rght_spd = moving ? ({0,frwrd} - PID[14:3]) : {0,frwrd};  //right speed calculation
+
+  //frwrd flop
+  always_ff @(posedge clk, negedge rst_n)
+    if (!rst_n)
+      frwrd <= 11'h000;
+    else if(!go)
+      frwrd <= 11'h000;
+    else if (err_vld && !(&frwrd[9:8]))
+      frwrd = frwrd + increment;
+
+endmodule
