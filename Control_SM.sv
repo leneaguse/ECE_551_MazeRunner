@@ -56,17 +56,15 @@ module Control_SM(frm_cmplt, trmt, sel, tx_done, snd_frm, clk, rst_n);
 	////////////////////
 	always_ff @(posedge clk) begin
     	if (start) begin
-    		sel <= 0;
+    		sel <= 1;
     	end 
     	else if (sent) begin
-    		sel <= 1;
+    		sel <= 0;
     	end
     	else begin
     		sel <= sel;
     	end
     end
-
-    //assign sel = sent ? 1'b0 : 1'b1;
 
 	//////////////////////////
 	// Infer frm_cmplt flop //
