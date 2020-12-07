@@ -1,14 +1,14 @@
-module CommMaster(TX, cmd_cmplt, cmd, snd_cmd, clk, rst_n);
+module CommMaster(clk, rst_n, TX, snd_cmd, cmd, cmd_cmplt);
 
 	output cmd_cmplt, TX;
 	input [15:0] cmd;
 	input snd_cmd, clk, rst_n;
 
 	logic [7:0] tx_data, mux_in;
-	logic sel, trmt, snd_frm, tx_done;
+	logic sel, trmt, tx_done;
 
 	// Instantiate SM = State Machine //
-	Control_SM iSM(.frm_cmplt(cmd_cmplt), .trmt(trmt), .sel(sel), .tx_done(tx_done), .snd_frm(snd_frm), .clk(clk), .rst_n(rst_n));
+	Control_SM iSM(.frm_cmplt(cmd_cmplt), .trmt(trmt), .sel(sel), .tx_done(tx_done), .snd_frm(snd_cmd), .clk(clk), .rst_n(rst_n));
 
 	// Instantiate DP = Data Path //
 	UART_tx iDP(.clk(clk), .rst_n(rst_n), .TX(TX), .trmt(trmt), .tx_data(tx_data), .tx_done(tx_done));
@@ -21,11 +21,11 @@ module CommMaster(TX, cmd_cmplt, cmd, snd_cmd, clk, rst_n);
 	///////////////////////
 	always_ff @(posedge clk) begin
 		if (snd_cmd) begin
-	    	mux_in <= cmd[7:0];
+	    		mux_in <= cmd[7:0];
 	  	end
 	  	else begin
-	    	mux_in <= mux_in;
-	    end
+	    		mux_in <= mux_in;
+	    	end
 	end
 
 	//////////////////////////////////////
