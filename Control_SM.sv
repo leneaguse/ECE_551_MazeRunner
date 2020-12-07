@@ -9,7 +9,7 @@ module Control_SM(frm_cmplt, trmt, sel, tx_done, snd_frm, clk, rst_n);
 	///////////////////////////////
 	// Define state as enum type //
 	///////////////////////////////
-	typedef enum reg {IDLE, TRANSMIT} state_t;
+	typedef enum reg {IDLE, TRANS} state_t;
 	state_t state, next_state;
 
 	//////////////////////
@@ -17,11 +17,11 @@ module Control_SM(frm_cmplt, trmt, sel, tx_done, snd_frm, clk, rst_n);
 	//////////////////////
 	always_ff @(posedge clk, negedge rst_n) begin
 		if (!rst_n) begin
-	    	state <= IDLE;
+	    		state <= IDLE;
 	  	end
 	  	else begin
-	    	state <= next_state;
-	    end
+	    		state <= next_state;
+	    	end
 	end
 
 	/////////////////////////
@@ -29,13 +29,13 @@ module Control_SM(frm_cmplt, trmt, sel, tx_done, snd_frm, clk, rst_n);
 	/////////////////////////
 	always_ff @(posedge clk, negedge rst_n) begin
 		if (!rst_n || start) begin
-	    	tx_count <= 0;
+	    		tx_count <= 0;
 	  	end
 	  	else if (sent) begin
 	  		tx_count <= 1;
 	  	end
 	  	else begin
-	    	tx_count <= tx_count;
+	    		tx_count <= tx_count;
 	    end
 	end
 
@@ -44,7 +44,7 @@ module Control_SM(frm_cmplt, trmt, sel, tx_done, snd_frm, clk, rst_n);
 	/////////////////////
 	always_ff @(posedge clk) begin
 		if (start) begin
-	    	trmt <= 1;
+	    		trmt <= 1;
 	  	end
 	  	else begin
 	  		trmt <= 0;
@@ -54,8 +54,8 @@ module Control_SM(frm_cmplt, trmt, sel, tx_done, snd_frm, clk, rst_n);
 	////////////////////
 	// Infer sel flop //
 	////////////////////
-	always_ff @(posedge clk) begin
-    	if (start) begin
+	always_ff @(posedge clk, negedge rst_n) begin
+    	if (!rst_n || start) begin
     		sel <= 1;
     	end 
     	else if (sent) begin
@@ -66,19 +66,21 @@ module Control_SM(frm_cmplt, trmt, sel, tx_done, snd_frm, clk, rst_n);
     	end
     end
 
+    //assign sel = sent ? 1'b0 : 1'b1;
+
 	//////////////////////////
 	// Infer frm_cmplt flop //
 	//////////////////////////
 	always_ff @(posedge clk, negedge rst_n) begin
 		if (!rst_n || start) begin
-	    	frm_cmplt <= 0;
+	    		frm_cmplt <= 0;
 	  	end
 	  	else if (set_cmplt) begin
 	  		frm_cmplt <= 1;
 	  	end
 	  	else begin
-	    	frm_cmplt <= frm_cmplt;
-	    end
+	    		frm_cmplt <= frm_cmplt;
+	    	end
 	end
 
 	/////////////////////////
@@ -88,11 +90,12 @@ module Control_SM(frm_cmplt, trmt, sel, tx_done, snd_frm, clk, rst_n);
 		start = 0;
 		sent = 0;
 		set_cmplt = 0;
+		next_state = state;
 
 		case (state)
 			IDLE:		if (snd_frm) begin
 							start = 1;
-							next_state = TRANSMIT;
+							next_state = TRANS;
 						end
 			default: 	if (tx_done & tx_count) begin
 							set_cmplt = 1;
