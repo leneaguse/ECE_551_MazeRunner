@@ -19,9 +19,11 @@ initial begin
 	rst_n = 0;
 	snd_cmd = 0;
 	cmd_rdy = 0;
-	clr_cmd_rdy = 1;
+	//clr_cmd_rdy = 1;
 	@(negedge clk)
 	rst_n = 1;
+	clr_cmd_rdy = 1;
+	@(negedge clk)
 	clr_cmd_rdy = 0;
 	
 	cmd2 = 16'h0000;
@@ -38,6 +40,17 @@ initial begin
 		begin
 			@(cmd_rdy);
 			disable CommMaster_wait1;
+		end
+	join
+		fork 
+		begin : CommMaster_wait2
+			repeat(1000000) @(posedge clk);
+			$display("Timeout occured waiting for cmd to come back");
+ 			$stop();
+		end
+		begin
+			@(cmd_rdy);
+			disable CommMaster_wait2;
 		end
 	join
 
