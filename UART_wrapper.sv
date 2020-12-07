@@ -1,59 +1,85 @@
-module UART_wrapper(clk, rst_n, clr_cmd_rdy, RX, cmd_rdy, cmd);
-  input clk, rst_n;
-  input clr_cmd_rdy, RX;
-  output reg cmd_rdy;
-  output [15:0] cmd;
+module UART_wrapper_SM(cmd_rdy, clr_rdy, sel, rx_rdy, clk, rst_n);
 
-  reg [7:0] rx_data;
+	output reg cmd_rdy, clr_rdy, sel;
+	input rx_rdy, clk, rst_n;
 
-  //Initialize varibles to store values
-  reg sel;
-  reg [7:0] upper_data;
+	reg rx_count;
+	logic start, received, set_rdy;
 
-  UART_rcv  iReceiver(.clk(clk), .rst_n(rst_n), .RX(RX), .clr_rdy(clr_cmd_rdy), .rx_data(rx_data), .rdy(rx_rdy));
+	///////////////////////////////
+	// Define state as enum type //
+	///////////////////////////////
+	typedef enum reg {IDLE, RECEIVE} state_t;
+	state_t state, next_state;
 
-  //Define states
-  typedef enum logic [1:0] {IDLE, LOWER_BYTE, UPPER_BYTE} state_t;
+	//////////////////////
+	// Infer state flop //
+	//////////////////////
+	always_ff @(posedge clk, negedge rst_n) begin
+		if (!rst_n) begin
+	    		state <= IDLE;
+	  	end
+	  	else begin
+	    		state <= next_state;
+	    end
+	end
 
-  //Initialize the current state the next state
-  state_t state, nxt_state;
+	/////////////////////////
+	// Infer rx_count flop //
+	/////////////////////////
+	always_ff @(posedge clk, negedge rst_n) begin
+		if (!rst_n || start) begin
+	    		rx_count <= 0;
+	  	end
+	  	else if (received) begin
+	  		rx_count <= 1;
+	  	end
+	  	else begin
+	    		rx_count <= rx_count;
+	    end
+	end
 
+	//////////////////////////////////
+	// Set sel based on state logic //
+	//////////////////////////////////
+    assign sel = received ? 1'b0 : 1'b1;	// Creates a 1 clk cycle delay so cmd_rdy is asserted at the same time as cmd is updated
 
-  assign cmd = {upper_data,rx_data};
+	/////////////////////////
+	// Infer cmd_rdy flop //
+	/////////////////////////
+	always_ff @(posedge clk) begin
+		if (start) begin
+	    		cmd_rdy <= 0;
+	  	end
+	  	else if (set_rdy) begin
+	  		cmd_rdy <= 1;
+	  	end
+	  	else begin
+	    		cmd_rdy <= cmd_rdy;
+	    end
+	end
 
-  //infer state flops
-  always_ff @(posedge clk, negedge rst_n) begin
-    if(!rst_n)
-      state <= IDLE;
-    else
-      state <= nxt_state;
-  end
+	/////////////////////////
+	// State machine logic //
+	/////////////////////////
+	always_comb begin
+		start = 0;
+		received = 0;
+		set_rdy = 0;
 
-  always_comb begin         
-    cmd_rdy = 0;
-    sel = 0;
-    nxt_state = state;
-
-    case(state)
-      IDLE:
-        if (rx_rdy) begin
-	  sel = 1;
-          nxt_state = UPPER_BYTE;
-        end
-      UPPER_BYTE: //rx_rdy is still being held high and there isn't a chance for the second set of data to come in
-        if (rx_rdy) begin
-	  sel = 1; 
-          cmd_rdy = 1;
-          nxt_state = LOWER_BYTE;
-        end 
-      default: begin
-        nxt_state = IDLE;
-      end
-    endcase
-  end
-
-  always_ff @(posedge clk)
-    if (sel)
-      upper_data <= rx_data;
-
-endmodule 
+		case (state)
+			IDLE:		if (clr_rdy) begin
+							start = 1;
+							next_state = RECEIVE;
+						end
+			default: 	if (rx_rdy && rx_count == 1) begin
+							received = 1;
+							set_rdy = 1;
+							next_state = IDLE;	
+						end
+						else if (rx_rdy) begin
+							received = 1;
+						end
+		endcase
+	end
+endmodule
