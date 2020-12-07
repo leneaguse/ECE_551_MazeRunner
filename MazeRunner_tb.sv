@@ -17,7 +17,12 @@ module MazeRunner_tb();
 	wire cmd_sent;					// probably don't need this
 	wire buzz,buzz_n;				// hooked to piezo buzzer outputs
 	
-    //////////////////////
+	int segA = 0;
+	int segB = 200;
+	int segC = 0;
+	int segD = -200;
+
+    	//////////////////////
 	// Instantiate DUT //
 	////////////////////
 	MazeRunner iDUT(.clk(clk),.RST_n(RST_n),.SS_n(SS_n),.MOSI(MOSI),.MISO(MISO),.SCLK(SCLK),
@@ -35,14 +40,36 @@ module MazeRunner_tb();
 	/////////////////////////////
 	// Instantiate CommMaster //
 	///////////////////////////
-	CommMaster iMST(.clk(clk), .rst_n(RST_n), .TX(RX_TX), .send_cmd(send_cmd), .cmd(cmd),
-                    .cmd_sent(cmd_sent));					  
+	CommMaster iMST(.clk(clk), .rst_n(RST_n), .TX(RX_TX), .snd_cmd(snd_cmd), .cmd(cmd),
+                    .cmd_cmplt(cmd_cmplt));					  
 		
 
 	initial begin
-      <  you fill in the details of what you are testing >
-	end
+      		
+		clk = 0;
+		RST_n = 0;
+		BMPL_n = 1;
+		BMPR_n = 1;
+		line_theta = segA;
+		line_present = 0;
+		send_cmd = 0;
+		@(negedge clk)
+		RST_n = 1;
+		
+		
+		cmd = 16'h0001;
+		fork begin : CMD1
+			repeat(700000) @(posedge clk);
+			$display("did not reach target value");
+			$stop();
+		begin
+			if(
+
+
+
 	
+	end
+
 	always
 	  #5 clk = ~clk;
 				  
