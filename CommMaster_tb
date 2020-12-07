@@ -38,19 +38,10 @@ initial begin
  			$stop();
 		end
 		begin
-			@(cmd_rdy);
+			@(negedge cmd_rdy);
+			//@(negedge clk);
+			//@(posedge clk);
 			disable CommMaster_wait1;
-		end
-	join
-		fork 
-		begin : CommMaster_wait2
-			repeat(1000000) @(posedge clk);
-			$display("Timeout occured waiting for cmd to come back");
- 			$stop();
-		end
-		begin
-			@(cmd_rdy);
-			disable CommMaster_wait2;
 		end
 	join
 
