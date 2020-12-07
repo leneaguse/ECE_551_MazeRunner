@@ -1,30 +1,59 @@
-module UART_wrapper(cmd, cmd_rdy, clr_cmd_rdy, RX, clk, rst_n);
+module UART_wrapper(clk, rst_n, clr_cmd_rdy, RX, cmd_rdy, cmd);
+  input clk, rst_n;
+  input clr_cmd_rdy, RX;
+  output reg cmd_rdy;
+  output [15:0] cmd;
 
-	output [15:0] cmd;
-	output cmd_rdy;
-	input clr_cmd_rdy, RX, clk, rst_n;
+  reg [7:0] rx_data;
 
-	logic sel, rx_rdy, clr_rdy;
-	logic [7:0] rx_data, d, q;
+  //Initialize varibles to store values
+  reg sel;
+  reg [7:0] upper_data;
 
-	// Instantiate SM = State Machine //
-	UART_wrapper_SM iSM(.cmd_rdy(cmd_rdy), .clr_rdy(clr_rdy), .sel(sel), .clr_cmd_rdy(clr_cmd_rdy), .rx_rdy(rx_rdy), .clk(clk), .rst_n(rst_n));
+  UART_rcv  iReceiver(.clk(clk), .rst_n(rst_n), .RX(RX), .clr_rdy(clr_cmd_rdy), .rx_data(rx_data), .rdy(rx_rdy));
 
-	// Instantiate DP = Data Path //
-	UART_rcv iDP(.clk(clk), .rst_n(rst_n), .RX(RX), .rdy(rx_rdy), .rx_data(rx_data), .clr_rdy(clr_rdy));
+  //Define states
+  typedef enum logic [1:0] {IDLE, LOWER_BYTE, UPPER_BYTE} state_t;
 
-	assign d[7:0] = sel ? rx_data[7:0] : q[7:0];
-	
-	//////////////////////////
-	// Infer cmd[15:8] flop //
-	//////////////////////////
-	always_ff @(posedge clk) begin
-		q <= d;
-	end
+  //Initialize the current state the next state
+  state_t state, nxt_state;
 
-	//////////////////////////////////
-	// Set cmd based on flop output //
-	//////////////////////////////////
-	assign cmd[15:0] = {q[7:0], rx_data[7:0]};
 
-endmodule
+  assign cmd = {upper_data,rx_data};
+
+  //infer state flops
+  always_ff @(posedge clk, negedge rst_n) begin
+    if(!rst_n)
+      state <= IDLE;
+    else
+      state <= nxt_state;
+  end
+
+  always_comb begin         
+    cmd_rdy = 0;
+    sel = 0;
+    nxt_state = state;
+
+    case(state)
+      IDLE:
+        if (rx_rdy) begin
+	  sel = 1;
+          nxt_state = UPPER_BYTE;
+        end
+      UPPER_BYTE: //rx_rdy is still being held high and there isn't a chance for the second set of data to come in
+        if (rx_rdy) begin
+	  sel = 1; 
+          cmd_rdy = 1;
+          nxt_state = LOWER_BYTE;
+        end 
+      default: begin
+        nxt_state = IDLE;
+      end
+    endcase
+  end
+
+  always_ff @(posedge clk)
+    if (sel)
+      upper_data <= rx_data;
+
+endmodule 
