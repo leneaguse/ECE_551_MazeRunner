@@ -18,6 +18,7 @@ initial begin
 	clk = 0;
 	rst_n = 0;
 	snd_cmd = 0;
+	cmd_rdy = 0;
 	clr_cmd_rdy = 1;
 	@(negedge clk)
 	rst_n = 1;
@@ -26,26 +27,27 @@ initial begin
 	cmd2 = 16'h0000;
 	cmd = 16'h34F1;
 	snd_cmd = 1;
-	snd_cmd = 0;
+
 
 	fork 
-		begin : CommMaster_wait
+		begin : CommMaster_wait1
 			repeat(1000000) @(posedge clk);
 			$display("Timeout occured waiting for cmd to come back");
  			$stop();
 		end
 		begin
-			@(posedge cmd2);
-			disable CommMaster_wait;
+			@(cmd_rdy);
+			disable CommMaster_wait1;
 		end
 	join
-	
+
 	if(cmd != cmd2) begin
 		$display("ERROR: values did not match. Value sent %h and value recieved was %h", cmd, cmd2);
 		$stop();
 	end
 	
-	$display("Yahoo! Values matched!");	
+	$display("Yahoo! Values matched! cmd was %h and cmd2 was %h", cmd, cmd2);
+	$stop();	
 
 
 end
